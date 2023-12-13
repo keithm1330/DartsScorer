@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rivervalley Community Centre Darts - 501 Game</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        #header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #4caf50;
+            color: #fff;
+            width: 100%;
+            padding: 10px;
+        }
+
+        #logo {
+            width: 50px; /* Adjust the width as needed */
+            height: 50px; /* Adjust the height as needed */
+            margin-right: 10px;
+        }
+
+        #scoreboard {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
+        .player {
+            text-align: center;
+            flex-grow: 1;
+            margin: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        input {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .score-display {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .win-message {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4caf50;
+            margin-top: 20px;
+        }
+
+        .score-history {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .score-history p {
+            margin: 5px 0;
+        }
+
+        .out-shot {
+            font-size: 18px;
+            color: #333;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <img src="dart.jpg" alt="Logo" id="logo">
+        <h1>Rivervalley Community Centre Darts</h1>
+    </div>
+    <div id="playerInput">
+        <label for="nameInput1">Player 1 Name:</label>
+        <input type="text" id="nameInput1" placeholder="Enter name">
+        <label for="nameInput2">Player 2 Name:</label>
+        <input type="text" id="nameInput2" placeholder="Enter name">
+        <button onclick="startGame()">Start Game</button>
+    </div>
+    <div id="scoreboard" style="display:none;">
+        <div class="player" id="player1">
+            <h2 id="player1Name">Player 1</h2>
+            <p class="score-display">Score: <span id="currentScore1">501</span></p>
+            <input type="number" id="scoreInput1" placeholder="Enter score" onkeypress="checkEnterKey(event, 1)">
+            <button onclick="throwDart(1)">Enter</button>
+            <button onclick="undoLastThrow(1)">Undo Last Throw</button>
+            <div class="score-history" id="scoreHistory1"></div>
+            <div class="out-shot" id="outShot1"></div>
+        </div>
+        <div class="player" id="player2">
+            <h2 id="player2Name">Player 2</h2>
+            <p class="score-display">Score: <span id="currentScore2">501</span></p>
+            <input type="number" id="scoreInput2" placeholder="Enter score" onkeypress="checkEnterKey(event, 2)">
+            <button onclick="throwDart(2)">Enter</button>
+            <button onclick="undoLastThrow(2)">Undo Last Throw</button>
+            <div class="score-history" id="scoreHistory2"></div>
+            <div class="out-shot" id="outShot2"></div>
+        </div>
+    </div>
+    <div class="win-message" id="winMessage"></div>
+    <script>
+        let gameInProgress = false;
+        let lastThrow = { player: 0, score: 0 };
+
+        function startGame() {
+            if (gameInProgress) {
+                alert('Game is already in progress.');
+                return;
+            }
+
+            const nameInput1 = document.getElementById('nameInput1').value.trim() || 'Player 1';
+            const nameInput2 = document.getElementById('nameInput2').value.trim() || 'Player 2';
+
+            document.getElementById('player1Name').innerText = nameInput1;
+            document.getElementById('player2Name').innerText = nameInput2;
+
+            document.getElementById('playerInput').style.display = 'none';
+            document.getElementById('scoreboard').style.display = 'flex';
+
+            // Display the initial winning shot information
+            updateWinningShotInfo();
+            gameInProgress = true;
+        }
+
+        let scores = [501, 501];
+        let currentPlayer = 0;
+        const MAX_SCORE = 180;
+
+        function updateScoreboard() {
+            document.getElementById('currentScore1').innerText = scores[0];
+            document.getElementById('currentScore2').innerText = scores[1];
+            document.getElementById('scoreInput1').value = '';
+            document.getElementById('scoreInput2').value = '';
+        }
+
+        function throwDart(player) {
+            if (!gameInProgress) {
+                alert('Please start the game first.');
+                return;
+            }
+
+            const inputElement = document.getElementById(`scoreInput${player}`);
+            const inputScore = parseInt(inputElement.value);
+
+            if (
+                !isNaN(inputScore) &&
+                inputScore > 0 &&
+                inputScore <= MAX_SCORE &&
+                scores[player - 1] >= inputScore
+            ) {
+                scores[player - 1] -= inputScore;
+                updateScoreboard();
+
+                const scoreHistoryElement = document.getElementById(`scoreHistory${player}`);
+                const scoreHistoryItem = document.createElement('p');
+                const playerName = player === 1 ? document.getElementById('player1Name').innerText : document.getElementById('player2Name').innerText;
+                scoreHistoryItem.innerText = `${playerName} threw: ${inputScore} | Remaining: ${scores[player - 1]}`;
+                scoreHistoryElement.appendChild(scoreHistoryItem);
+
+                const outShotElement = document.getElementById(`outShot${player}`);
+                outShotElement.innerText = '';
+
+                lastThrow = { player, score: inputScore };
+
+                if (scores[player - 1] === 0) {
+                    document.getElementById('winMessage').innerText = `${playerName} wins!`;
+                    disableButtons();
+                    const outShot = calculateOutShot(player);
+                    if (outShot) {
+                        outShotElement.innerText = `${playerName} finished with a ${outShot} out shot!`;
+                    }
+                    gameInProgress = false; // Game is no longer in progress
+                } else if (scores[player - 1] < 170) {
+                    currentPlayer = 1 - currentPlayer; // Switch player
+                    document.getElementById('winMessage').innerText = '';
+                    updateWinningShotInfo();
+                }
+
+                // Automatically switch to the next player
+                document.getElementById(`scoreInput${3 - player}`).focus();
+            } else {
+                alert(`Invalid input. Please enter a valid score between 1 and ${MAX_SCORE}.`);
+            }
+        }
+
+        function undoLastThrow(player) {
+            if (!gameInProgress) {
+                alert('Please start the game first.');
+                return;
+            }
+
+            if (lastThrow.player === player) {
+                scores[player - 1] += lastThrow.score;
+                updateScoreboard();
+
+                const scoreHistoryElement = document.getElementById(`scoreHistory${player}`);
+                scoreHistoryElement.removeChild(scoreHistoryElement.lastChild);
+
+                const outShotElement = document.getElementById(`outShot${player}`);
+                outShotElement.innerText = '';
+
+                currentPlayer = player - 1; // Switch back to the player who made the last throw
+                document.getElementById('winMessage').innerText = '';
+                updateWinningShotInfo();
+            } else {
+                alert('Undo is only allowed for the last throw made by the current player.');
+            }
+        }
+
+        function checkEnterKey(event, player) {
+            if (event.key === 'Enter') {
+                throwDart(player);
+            }
+        }
+
+        function calculateOutShot(player) {
+            const remainingScore = scores[player - 1];
+            if (remainingScore === 50 || remainingScore === 40 || remainingScore === 32) {
+                return remainingScore;
+            } else if (remainingScore % 2 === 0 && remainingScore <= 170) {
+                // Check for common out shots on a double
+                return findDoubleOutShot(remainingScore);
+            }
+            return null;
+        }
+
+        function findDoubleOutShot(remainingScore) {
+            // List of common double out shots
+            const doubleOutShots = [40, 32, 24, 20, 16, 12, 8, 4, 2];
+
+            for (let i = 0; i < doubleOutShots.length; i++) {
+                if (doubleOutShots[i] === remainingScore) {
+                    return `Double ${doubleOutShots[i]}`;
+                }
+            }
+            return null;
+        }
+
+        function updateWinningShotInfo() {
+            const currentPlayerName = currentPlayer === 0 ? document.getElementById('player1Name').innerText : document.getElementById('player2Name').innerText;
+            const outShotElement = document.getElementById(`outShot${currentPlayer + 1}`);
+            const remainingScore = scores[currentPlayer];
+
+            if (remainingScore === 50 || remainingScore === 40 || remainingScore === 32) {
+                outShotElement.innerText = `${currentPlayerName} needs a Double ${remainingScore} to finish.`;
+            } else if (remainingScore % 2 === 0 && remainingScore < 170) {
+                const doubleOutShot = findDoubleOutShot(remainingScore);
+                if (doubleOutShot) {
+                    outShotElement.innerText = `${currentPlayerName} needs to hit a ${doubleOutShot} to finish.`;
+                }
+            }
+        }
+
+        function disableButtons() {
+            document.querySelectorAll('button').forEach(button => {
+                button.disabled = true;
+            });
+        }
+    </script>
+</body>
+</html>
